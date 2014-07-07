@@ -1,6 +1,7 @@
 import time
 import simplejson as json
 from redis import Redis
+from client import Client
 
 class RpcError(Exception):
     def __init__(self, number, message):
@@ -13,6 +14,7 @@ class RpcError(Exception):
 class BaseWorker(object):
     def __init__(self, redis=Redis()):
         self.redis = redis
+        self.client = Client(self.redis)
 
     def work_queue(self):
         return 'work:{}'.format(self.queue_name)

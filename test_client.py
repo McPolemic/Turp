@@ -12,3 +12,7 @@ if __name__ == '__main__':
     id = client.send_request(queue_name, 'authenticate', 'test', '123')
     response = client.get_response(id)
     print 'Second response: {}'.format(response)
+
+    id = client.send_request(queue_name, 'authenticate', 'test_client', '123')
+    response = client.get_response(id)
+    print 'Third response: {}'.format(response)
