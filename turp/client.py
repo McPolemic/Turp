@@ -5,8 +5,8 @@ from redis import Redis
 import simplejson as json
 
 class Client:
-  def __init__(self):
-    self.r = Redis()
+  def __init__(self, redis=Redis()):
+    self.redis = redis
 
   def random_key(self):
     return str(uuid.uuid4())
@@ -25,13 +25,13 @@ class Client:
                'queue_start_time': begin_time,
                'method': method,
                'params': params}
-    self.r.lpush(queue_name, json.dumps(request))
-    self.r.expire(queue_name, 10)
+    self.redis.lpush(queue_name, json.dumps(request))
+    self.redis.expire(queue_name, 10)
     print "Sent request {} to queue {}".format(id, queue_name)
     return id
 
   def get_response(self, id):
-    channel, response = self.r.brpop(id)
+    channel, response = self.redis.brpop(id)
     response_data = json.loads(response)
 
     id     = response_data['id']

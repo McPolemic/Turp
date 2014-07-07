@@ -11,8 +11,8 @@ class RpcError(Exception):
         return self.message
 
 class BaseWorker(object):
-    def __init__(self):
-        self.r = Redis()
+    def __init__(self, redis=Redis()):
+        self.redis = redis
 
     def work_queue(self):
         return 'work:{}'.format(self.queue_name)
@@ -21,7 +21,7 @@ class BaseWorker(object):
         print "Running worker..."
         print "Monitoring {}".format(self.work_queue())
         while True:
-            channel, request = self.r.brpop(self.work_queue())
+            channel, request = self.redis.brpop(self.work_queue())
             request_data = json.loads(request)
             self.process_request(request_data)
 
@@ -60,7 +60,7 @@ class BaseWorker(object):
             print 'Got result {}'.format(result)
             response['result'] = result
 
-        self.r.rpush(id, json.dumps(response))
-        self.r.expire(id, 30)
+        self.redis.rpush(id, json.dumps(response))
+        self.redis.expire(id, 30)
         print "Finished. Task ID is {}".format(id)
 
