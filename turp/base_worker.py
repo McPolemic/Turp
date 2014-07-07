@@ -14,7 +14,6 @@ class RpcError(Exception):
 class BaseWorker(object):
     def __init__(self, redis=Redis()):
         self.redis = redis
-        self.client = Client(self.redis)
 
     def work_queue(self):
         return 'work:{}'.format(self.queue_name)
@@ -30,13 +29,17 @@ class BaseWorker(object):
     def log_request(self, request):
         print 'Received request {}'.format(request)
 
+    def current_request_id(self):
+        return ','.join(self.request_id)
+
     def process_request(self, request):
         self.log_request(request)
-        id = request['id']
+        request_id = request['id']
         method = request['method']
         args = request['params']
         result = None
         error = None
+        self.client = Client(self.redis, request_id)
         queue_end_time = time.time()*1000000
 
         try:
@@ -49,7 +52,7 @@ class BaseWorker(object):
                      'message': e.message}
 
         work_end_time = time.time()*1000000
-        response = {'id': id,
+        response = {'id': request_id,
                     'jsonrpc': '2.0',
                     'queue_start_time': request['queue_start_time'],
                     'queue_end_time':   queue_end_time,
@@ -62,7 +65,8 @@ class BaseWorker(object):
             print 'Got result {}'.format(result)
             response['result'] = result
 
-        self.redis.rpush(id, json.dumps(response))
-        self.redis.expire(id, 30)
-        print "Finished. Task ID is {}".format(id)
+        self.redis.rpush(request_id, json.dumps(response))
+        self.redis.expire(request_id, 30)
+        self.client = None
+        print "Finished. Task ID is {}".format(request_id)
 
